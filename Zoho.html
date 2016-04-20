@@ -1,13 +1,25 @@
 <html>
 <meta http-equiv="Cache-Control" content="no-store"/>
 <head>
-    <title>Zoho leads extractor</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+    <title>Zoho web data connector</title>
+    <link rel="stylesheet" src="css/styles.css">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
     <script src="https://connectors.tableau.com/libs/tableauwdc-1.1.1.js" type="text/javascript"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js" type="text/javascript"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+
     <script type="text/javascript">
         (function(){
 
             var myConnector = tableau.makeConnector();
+            var zohoBaseUri = 'http://localhost:3000/proxy?url=http://crm.zoho.com:80/crm/private/json/Leads/getRecords?authtoken=fe9fffcfec31f231a27ebb598f171688&scope=crmapi&fromIndex=';
 
             myConnector.getColumnHeaders = function() {
                 var fieldNames = ['LEADID', 'SMOWNERID', 'Lead Owner','Company', 'First Name' ,'Last Name', 'Email',  'Phone',  'No of Employees', 'Annual Revenue', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Country', 'Email Opt Out', 'Last Activity Time','Contact Permission Granted'];
@@ -16,34 +28,76 @@
             }
 
             myConnector.getTableData = function(lastRecordToken) {
-                var dataToReturn = [];
-                var hasMoreData = false;
+
+                var fromIndex;
+                if(!lastRecordToken){
+                    fromIndex = 0;
+                }else{
+                    fromIndex = parseInt(lastRecordToken) ;
+                }
+
                 var xhr = $.ajax({
-                    url: 'http://localhost:3000/proxy?url=http://crm.zoho.com:80/crm/private/json/Leads/getRecords?authtoken=fe9fffcfec31f231a27ebb598f171688&scope=crmapi',
+
+                    url: zohoBaseUri + fromIndex + '&toIndex=' + (fromIndex + 200),
                     datatype: 'json',
                     success: function(data){
 
-                        if(data.response.result.Leads.row){
+                        // if no data came back from Zoho do some more checks
+                        if(data.response.nodata){
 
-                            var leads = data.response.result.Leads.row;
-
-                            for(var i=0;i<leads.length;i++) {
-
-                                var row = leads[i].FL;
-                                var lead = {};
-
-                                for (var j = 0; j < row.length; j++) {
-                                    lead[row[j]["val"]] = row[j]["content"];
-                                }
-
-                                dataToReturn.push(lead);
+                            /*
+                            * if there was no lastRecordToken, that means that there was never any data from the first call
+                            * so just abort
+                            * */
+                            if(!lastRecordToken){
+                                tableau.abortWithError("No leads found in Zoho");
                             }
 
-                            tableau.dataCallback(dataToReturn, lastRecordToken, false)
-                        }else{
-                            tableau.abortWithError("No leads found in Zoho");
+                            /*
+                            * if there was a lastRecordToken, then it means there used to be data
+                            * so just return with hasMoreRecords = false, which is the third parameter
+                            * */
+                            else{
+                                tableau.dataCallback([], lastRecordToken, false);
+                            }
                         }
 
+                        /*
+                        * if there is some data, let's process it
+                        * */
+                        else{
+                            // let's make sure there are rows
+                            if(data.response.result.Leads.row){
+
+                                var leads = data.response.result.Leads.row;
+                                var dataToReturn = [];
+
+                                tableau.log("Going through rows: " + fromIndex + " to " + (fromIndex+200));
+                                tableau.log("Amount of leads to process: " + leads.length);
+
+                                for(var i=0;i<leads.length;i++) {
+
+                                    var row = leads[i].FL;
+                                    var lead = {};
+
+                                    for (var j = 0; j < row.length; j++) {
+                                        lead[row[j]["val"]] = row[j]["content"];
+                                    }
+
+                                    dataToReturn.push(lead);
+                                }
+
+                                if(leads.length < 200) {
+                                    tableau.dataCallback(dataToReturn, (fromIndex + 200).toString(), false);
+                                }else{
+                                    tableau.dataCallback(dataToReturn, (fromIndex + 200).toString(), true);
+                                }
+
+
+                            }else{
+                                tableau.abortWithError("No leads found in Zoho");
+                            }
+                        }
 
                     },
                     error: function(xhr, ajaxOptions, thrownError){
@@ -52,22 +106,80 @@
                         tableau.abortWithError("Error while trying to connect to Zoho.");
                     }
                 });
+
             }
             tableau.registerConnector(myConnector);
         })();
 
         $(document).ready(function(){
+
+            $("#submitButton").attr("disabled", "disabled");
+
             $("#submitButton").click(function(){
 
-                tableau.connectionName = " leads";
+                tableau.connectionName = "Zoho data";
+
                 tableau.submit();
 
             });
+
+
+            $(document).on('click', '.dropdown-menu li a', function(){
+                tableau.connectionData = $(this).html();
+                $("#submitButton").attr("disabled", false);
+                //$("#entity").class
+            });
+
         });
     </script>
 </head>
 <body>
-<p><button type="button" id="submitButton">Get the Data</button></p>
+    <h1>Zoho CRM Web Data Connector</h1>
+    <p>Powered by Mazepoint</p>
+
+    <h3><span class="label label-danger" id="entity">Select something to extract</span></h3>
+
+    <div class="dropdown">
+        <ul class="dropdown-menu">
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Leads</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Account</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Contacts</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Contacts</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Potentials</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Campaigns</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Cases</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Solutions</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Products</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Price Books</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Quotes</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Invoices</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Sales Orders</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Vendors</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Purchase Orders</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Events</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Tasks</a></li>
+            <li role="presentation"><a class="zoho-entity" role="menuitem" href="#">Calls</a></li>
+        </ul>
+        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select a category <span class="caret"></span></button>
+    </div>
+
+    <form class="form-horizontal">
+        <div class="control-group">
+            <label class="control-label" for="inputEmail">Zoho auth token</label>
+            <div class="controls">
+                <input type="text" id="inputEmail" placeholder="Zoho auth token">
+            </div>
+        </div>
+
+        <div><button type="button" id="submitButton" class="btn btn-default">Get the Data</button></div>
+    </form>
+
+
+
+
+
+
+
 </body>
 
 </html>

@@ -1,0 +1,311 @@
+<html>
+<meta http-equiv="Cache-Control" content="no-store"/>
+<head>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+    <title>Zoho web data connector</title>
+    <link rel="icon" type="image/png" href="./img/favicon.png">
+    <link rel="stylesheet" src="css/styles.css">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+    <script src="https://connectors.tableau.com/libs/tableauwdc-1.1.1.js" type="text/javascript"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+
+    <script type="text/javascript">
+        (function(){
+
+            var myConnector = tableau.makeConnector();
+
+
+            myConnector.init = function() {
+                // If we are in the interactive phase, repopulate the input text box if there is connectionData present.
+                // This is hit when editing a connection in Tableau.
+                if (tableau.phase == tableau.phaseEnum.interactivePhase) {
+                    $('#categoryLabel').text("Extracting " + tableau.connectionData);
+                }
+
+                tableau.initCallback();
+            };
+
+            var category = tableau.connectionData;
+            var zohoBaseUri = "http://localhost:3000/proxy?url=http://crm.zoho.com:80/crm/private/json/" + category + "/getRecords?authtoken=fe9fffcfec31f231a27ebb598f171688&scope=crmapi&fromIndex=";
+
+            myConnector.getColumnHeaders = function() {
+                var category = tableau.connectionData;
+
+                switch(category){
+                    case "Leads":
+                        var fieldNames = ['LEADID', 'SMOWNERID', 'Lead Owner', 'Company', 'First Name' ,'Last Name', 'Email',  'Phone',  'No of Employees', 'Annual Revenue', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Country', 'Email Opt Out', 'Last Activity Time','Contact Permission Granted'];
+                        var fieldTypes = ['string', 'string'   , 'string'    , 'string' , 'string'     ,'string'   , 'string', 'string', 'int'            , 'float'         , 'string'     , 'string',     'string'    , 'string',      'datetime',     'datetime',      'string',  'string',        'datetime',          'bool'];
+                        break;
+                    case "Accounts":
+                        var fieldNames = ['ACCOUNTID', 'SMOWNERID', 'Account Owner', 'Rating', 'Account Name' , 'Phone',  'Account Number', 'Employees', 'Annual Revenue', 'SIC Code', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified by', 'Created Time', 'Modified Time', 'Billing Street', 'Billing City', 'Billing State', 'Billing Code', 'Last Activity Time', 'Most used Technology' ];
+                        var fieldTypes = ['string',    'string',    'string',        'string', 'string',        'string', 'string',         'string',    'float',          'string',   'string',      'string',     'string'    , 'string',      'datetime',     'datetime',      'string',         'string',       'string',        'string',        'datetime',          'string'];
+                        break;
+                    case "Contacts":
+                        var fieldNames = ['CONTACTID', 'SMOWNERID', 'Contact Owner', 'First Name', 'Last Name' ,'ACCOUNTID', 'Account Name',  'Title',  'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Mailing Street', 'Mailing City', 'Mailing State', 'Mailing Zip', 'Email Opt Out', 'Add to QuickBooks', 'Last Activity Time', 'Industry', 'Rating'];
+                        var fieldTypes = ['string',    'string',    'string' ,       'string',     'string',    'string',    'string',        'string', 'string'     , 'string',     'string',     'string',      'datetime',     'datetime',      'string',         'string',       'string',        'string',      'string',        'string',             'datetime',          'string',   'string'];
+                        break;
+                    case "Potentials":
+                        var fieldNames = ['POTENTIALID', 'SMOWNERID', 'Potential Owner', 'Amount', 'Potential Name' ,'Closing Date', 'ACCOUNTID',  'Account Name',  'Stage', 'Type', 'Probability', 'Lead Source', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'CONTACTID', 'Contact Name', 'Expected Revenue', 'Last Activity Time', 'Sales Cycle Duration', 'Overall Sales Duration', 'Related Software', 'Opportunity SM', 'Opportunity IS', 'Marging - Non Labour', 'Total Revenue', 'Total Cost', 'Total Margin', 'Margin - Labour', 'Expected Margin', 'Focus'];
+                        var fieldTypes = ['string',      'string'   , 'string',          'string', 'string',        'date',          'string',     'string',        'string',        'float',       'string',      'string',      'string',     'string',     'string',      'datetime',     'datetime',      'string',    'string',       'float',            'datetime',           'float',                'float',                  'string',           'string',         'string',         'float',                'float',         'float',      'float',        'float',           'float',           'string'];
+                        break;
+                    case "Campaigns":
+                        var fieldNames = ['CAMPAIGNID', 'SMOWNERID', 'Campaign Owner', 'Type',   'Campaign Name', 'Status', 'Exepected Revenue',  'Budgeted Cost',  'Actual Cost', 'Expected Response', 'Num sent', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time'];
+                        var fieldTypes = ['string',     'string',    'string',         'string', 'string',        'string', 'float',              'float',          'float',       'float',             'int',      'string',      'string',     'string',     'string',      'datetime',     'datetime'];
+                        break;
+                    /*case "Cases":
+                        var fieldNames = ['LEADID', 'SMOWNERID', 'Lead Owner', 'Company', 'First Name' ,'Last Name', 'Email',  'Phone',  'No of Employees', 'Annual Revenue', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Country', 'Email Opt Out', 'Last Activity Time','Contact Permission Granted'];
+                        var fieldTypes = ['string', 'string'   , 'string'    ,'string' , 'string'     ,'string'   , 'string', 'string', 'int'            , 'float'         , 'string'     , 'string',     'string'    , 'string',      'datetime',     'datetime',      'string',  'string',        'datetime',          'bool'];
+                        break;
+                    case "Solutions":
+                        var fieldNames = ['LEADID', 'SMOWNERID', 'Lead Owner', 'Company', 'First Name' ,'Last Name', 'Email',  'Phone',  'No of Employees', 'Annual Revenue', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Country', 'Email Opt Out', 'Last Activity Time','Contact Permission Granted'];
+                        var fieldTypes = ['string', 'string'   , 'string'    ,'string' , 'string'     ,'string'   , 'string', 'string', 'int'            , 'float'         , 'string'     , 'string',     'string'    , 'string',      'datetime',     'datetime',      'string',  'string',        'datetime',          'bool'];
+                        break;*/
+                    case "Products":
+                        var fieldNames = ['PRODUCTID', 'SMOWNERID', 'Product Owner', 'Product Name', 'VENDORID', 'Vendor Name', 'Product Active',  'Product Category',  'Sales Start Date', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Unit Price', 'Commission Rate', 'Tax',   'Usage Unit', 'Qty Ordered', 'Qty in Stock', 'Reorder Level', 'Qty in Demand', 'Description', 'Taxable'];
+                        var fieldTypes = ['string',    'string' ,   'string',        'string' ,      'string',   'string',      'bool',            'string',            'date'            , 'string',      'string',     'string',     'string',      'datetime',     'datetime',      'float',      'float',           'float', 'float',      'float',       'float',        'float',         'float',         'string',      'bool'];
+                        break;
+                    case "PriceBooks":
+                        var fieldNames = ['BOOKID', 'SMOWNERID', 'Price Book Owner', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Price Book Name', 'Active'];
+                        var fieldTypes = ['string', 'string',    'string',           'string',      'string',     'string',     'string',      'datetime',     'datetime',      'string'         , 'bool'];
+                        break;
+                    // will have to do something special for the quotes, invoices, sales orders
+                    /*case "Quotes":
+                        var fieldNames = ['LEADID', 'SMOWNERID', 'Lead Owner', 'Company', 'First Name' ,'Last Name', 'Email',  'Phone',  'No of Employees', 'Annual Revenue', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Country', 'Email Opt Out', 'Last Activity Time','Contact Permission Granted'];
+                        var fieldTypes = ['string', 'string'   , 'string'    , 'string' , 'string'     ,'string'   , 'string', 'string', 'int'            , 'float'         , 'string'     , 'string',     'string'    , 'string',      'datetime',     'datetime',      'string',  'string',        'datetime',          'bool'];
+                        break;
+                    case "Invoices":
+                        var fieldNames = ['LEADID', 'SMOWNERID', 'Lead Owner', 'Company', 'First Name' ,'Last Name', 'Email',  'Phone',  'No of Employees', 'Annual Revenue', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Country', 'Email Opt Out', 'Last Activity Time','Contact Permission Granted'];
+                        var fieldTypes = ['string', 'string'   , 'string'    , 'string' , 'string'     ,'string'   , 'string', 'string', 'int'            , 'float'         , 'string'     , 'string',     'string'    , 'string',      'datetime',     'datetime',      'string',  'string',        'datetime',          'bool'];
+                        break;
+                    case "SalesOrders":
+                        var fieldNames = ['LEADID', 'SMOWNERID', 'Lead Owner', 'Company', 'First Name' ,'Last Name', 'Email',  'Phone',  'No of Employees', 'Annual Revenue', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Country', 'Email Opt Out', 'Last Activity Time','Contact Permission Granted'];
+                        var fieldTypes = ['string', 'string'   , 'string'    , 'string' , 'string'     ,'string'   , 'string', 'string', 'int'            , 'float'         , 'string'     , 'string',     'string'    , 'string',      'datetime',     'datetime',      'string',  'string',        'datetime',          'bool'];
+                        break;*/
+                    case "Vendors":
+                        var fieldNames = ['VENDORID', 'Vendor Name', 'SMOWNERID', 'Vendor Owner', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time'];
+                        var fieldTypes = ['string',   'string',      'string',    'string',       'string',      'string',     'string',     'string',      'datetime',     'datetime'];
+                        break;
+                    /*case "PurchaseOrders":
+                        var fieldNames = ['LEADID', 'SMOWNERID', 'Lead Owner', 'Company', 'First Name' ,'Last Name', 'Email',  'Phone',  'No of Employees', 'Annual Revenue', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Country', 'Email Opt Out', 'Last Activity Time','Contact Permission Granted'];
+                        var fieldTypes = ['string', 'string'   , 'string'    , 'string' , 'string'     ,'string'   , 'string', 'string', 'int'            , 'float'         , 'string'     , 'string',     'string'    , 'string',      'datetime',     'datetime',      'string',  'string',        'datetime',          'bool'];
+                        break;*/
+                    case "Events":
+                        var fieldNames = ['ACTIVITYID', 'UID',    'SMOWNERID', 'Event Owner', 'Subject', 'Venue',  'CONTACTID', 'Contact Name', 'RELATEDTOID', 'SEMODULE', 'Related To', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Start Datetime', 'End Datetime'];
+                        var fieldTypes = ['string',     'string', 'string',    'string',      'string',  'string', 'string',    'string',       'string',      'string',   'string',     'string',      'string',     'string',     'string',      'datetime',      'string',       'datetime',       'datetime'];
+                        break;
+                    case "Tasks":
+                        var fieldNames = ['ACTIVITYID', 'SMOWNERID', 'Task Owner', 'Subject', 'Due Date', 'CONTACTID', 'Contact Name',  'RELATEDTOID',  'SEMODULE', 'Related To', 'Status', 'Priority', 'SMCREATORID', 'Created by', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Send Notification Email'];
+                        var fieldTypes = ['string',     'string',    'string',     'string',  'date',     'string',    'string',        'string',       'string',   'string',     'string', 'string',   'string',      'string',     'string',     'string',      'datetime',     'datetime',      'bool'];
+                        break;
+                    case "Calls":
+                        var fieldNames = ['ACTIVITYID', 'SMOWNERID', 'Call Owner', 'Subject', 'Call Type', 'Call Purpose', 'CONTACTID',  'Contact Name',  'RELATEDTOID', 'SEMODULE', 'Related To', 'Call Start Time', 'Call Duration', 'Call Duration (in seconds)', 'Description', 'Billable', 'SMCREATORID', 'Created By', 'MODIFIEDBY', 'Modified By', 'Created Time', 'Modified Time', 'Call Status'];
+                        var fieldTypes = ['string',     'string',    'string',     'string',  'string',    'string',       'string',     'string',        'string',      'string',   'string',     'datetime',        'float',         'int',                        'string' ,     'bool',     'string',      'string',     'string',     'string',      'datetime',     'datetime',      'string'];
+                        break;
+                }
+
+                tableau.headersCallback(fieldNames, fieldTypes);
+            }
+
+            myConnector.getTableData = function(lastRecordToken) {
+
+                var fromIndex;
+                if(!lastRecordToken){
+                    fromIndex = 0;
+                }else{
+                    fromIndex = parseInt(lastRecordToken) ;
+                }
+
+                var xhr = $.ajax({
+
+                    url: "http://localhost:3000/proxy?url=http://crm.zoho.com:80/crm/private/json/" + tableau.connectionData + "/getRecords?authtoken=fe9fffcfec31f231a27ebb598f171688&scope=crmapi&fromIndex=" + fromIndex + '&toIndex=' + (fromIndex + 200),
+                    datatype: 'json',
+                    success: function(data){
+
+                        var zohoResponse = JSON.parse(data);
+
+                        var a = 2;
+
+                        // if no data came back from Zoho do some more checks
+                        if(typeof zohoResponse.response.nodata !== "undefined"){
+
+                            /*
+                            * if there was no lastRecordToken, that means that there was never any data from the first call
+                            * so just abort
+                            * */
+                            if(!lastRecordToken){
+                                tableau.abortWithError("No leads found in Zoho");
+                            }
+
+                            /*
+                            * if there was a lastRecordToken, then it means there used to be data
+                            * so just return with hasMoreRecords = false, which is the third parameter
+                            * */
+                            else{
+                                tableau.dataCallback([], lastRecordToken, false);
+                            }
+                        }
+
+                        /*
+                        * if there is some data, let's process it
+                        * */
+                        else{
+                            // let's make sure there are rows
+                            if(zohoResponse.response.result[tableau.connectionData].row){
+
+                                var items = zohoResponse.response.result[tableau.connectionData].row;
+                                var dataToReturn = [];
+
+                                tableau.log("Going through rows: " + fromIndex + " to " + (fromIndex+200));
+                                tableau.log("Amount of leads to process: " + items.length);
+
+                                for(var i=0;i<items.length;i++) {
+
+                                    var row = items[i].FL;
+                                    var item = {};
+
+                                    for (var j = 0; j < row.length; j++) {
+                                        item[row[j]["val"]] = row[j]["content"];
+                                    }
+
+                                    dataToReturn.push(item);
+                                }
+
+                                if(items.length < 200) {
+                                    tableau.dataCallback(dataToReturn, (fromIndex + 200).toString(), false);
+                                }else{
+                                    tableau.dataCallback(dataToReturn, (fromIndex + 200).toString(), true);
+                                }
+
+
+                            }else{
+                                tableau.abortWithError("No data found in Zoho");
+                            }
+                        }
+
+                    },
+                    error: function(xhr, ajaxOptions, thrownError){
+                        // If the connection fails, log the error and return an empty set.
+                        tableau.log("Connection error: " + xhr.responseText + "\n" + thrownError);
+                        tableau.abortWithError("Error while trying to connect to Zoho.");
+                    }
+                });
+
+            }
+
+            tableau.registerConnector(myConnector);
+
+
+            myConnector.setCategory = function(category) {
+                tableau.connectionData = category; // set the ticker symbol as the connection data so we can get to it when we fetch the data
+                tableau.connectionName = "Zoho data - " + category // name the data source. This will be the data source name in Tableau
+            };
+
+            $(document).ready(function(){
+
+                var category;
+
+                // automatically feed in the auth token
+                $("#inputToken").val("fe9fffcfec31f231a27ebb598f171688");
+
+                // by default the submit button shoule be disabled until the user picks a category
+                $("#submitButton").attr("disabled", "disabled");
+
+                $("#submitButton").click(function(){
+
+                    myConnector.setCategory(category);
+                    tableau.submit();
+                });
+
+                $(document).on('click', '.dropdown-menu li a', function(){
+                    //get the category from the selector
+
+                    if ($(this).parent().attr("class") != "disabled"){
+
+                        console.log("selected a proper category");
+                        category = $(this).attr("name");
+
+                        tableau.connectionData = category;
+
+                        $('#categoryLabel').addClass('label-primary').removeClass('label-danger');
+
+                        $('#dropdownButton').text(category);
+                        $('#categoryLabel').text("Extracting " + $(this).html());
+                        $("#submitButton").attr("disabled", false);
+                    } else{
+
+                        console.log("selected disabled category")
+                        $('#categoryLabel').text("Select a category that isn't disabled");
+
+                    }
+
+                });
+
+            });
+
+        })();
+
+
+    </script>
+</head>
+<body>
+    <h1 class="col-xs-12">Zoho CRM Web Data Connector</h1>
+    <p class="col-xs-12">Mazepoint</p>
+
+    <form class="form-horizontal">
+
+        <div class="form-group">
+            <div class="dropdown col-sm-offset-2 col-sm-10">
+                <ul class="dropdown-menu">
+                    <li role="presentation"><a id="xxx" class="zoho-entity" role="menuitem" name="Leads" href="#">Leads</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Accounts" href="#">Accounts</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Contacts" href="#">Contacts</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Potentials" href="#">Potentials</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Campaigns" href="#">Campaigns</a></li>
+                    <li role="presentation" class="disabled"><a class="zoho-entity" role="menuitem" name="Cases" href="#">Cases</a></li>
+                    <li role="presentation" class="disabled"><a class="zoho-entity" role="menuitem" name="Solutions" href="#">Solutions</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Products" href="#">Products</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="PriceBooks" href="#">Price Books</a></li>
+                    <li role="presentation" class="disabled"><a class="zoho-entity" role="menuitem" name="Quotes" href="#">Quotes</a></li>
+                    <li role="presentation" class="disabled"><a class="zoho-entity" role="menuitem" name="Invoices" href="#">Invoices</a></li>
+                    <li role="presentation" class="disabled"><a class="zoho-entity" role="menuitem" name="SalesOrders" href="#">Sales Orders</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Vendors" href="#">Vendors</a></li>
+                    <li role="presentation" class="disabled"><a class="zoho-entity" role="menuitem" name="PurchaseOrders" href="#">Purchase Orders</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Events" href="#">Events</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Tasks" href="#">Tasks</a></li>
+                    <li role="presentation"><a class="zoho-entity" role="menuitem" name="Calls" href="#">Calls</a></li>
+                </ul>
+                <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownButton" data-toggle="dropdown">Select a category <span class="caret"></span></button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <h3 class="col-sm-offset-2 col-sm-10"><span class="label label-danger" id="categoryLabel">Select a category to enable extraction</span></h3>
+        </div>
+        <div class="form-group">
+            <label for="inputToken" class="col-sm-2 control-label">Auth token</label>
+            <div class="col-sm-3">
+                <input type="text" class="form-control" id="inputToken" placeholder="Zoho Auth token">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+                <button type="button" id="submitButton" class="btn btn-default">Get the data</button>
+            </div>
+        </div>
+    </form>
+
+
+
+
+
+
+</body>
+
+</html>
